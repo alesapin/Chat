@@ -9,6 +9,7 @@ import java.util.HashMap;
 
 public class Server {
 	public static final char NEW_USER_COME_TO_SERVER=1;
+	public static final char USER_LEFT_SERVER=2;
 	public static final char ALL_USERS_SEND=5;
 	public static final char NEW_USER_WRITING_TO_YOU=3;
 	
@@ -29,7 +30,15 @@ public class Server {
 		return dataBase.get(name);
 	}
 	public void disconnectUser(String name){
+		System.out.println("Дисконекчу : "+name);
+		try {
+			dataBase.get(name).close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		dataBase.remove(name);
+		sendMessageForEveryone(Server.USER_LEFT_SERVER+name);
 	}
 	public String[] getAllOnlineUsers(){
 		int len=dataBase.size();
@@ -40,10 +49,10 @@ public class Server {
 		}
 		return data;
 	}
-	private void sendNewUserNameForEveryone(String name){
+	private void sendMessageForEveryone(String msg){
 		for(DataOutputStream out:dataBase.values()){
 			try {
-				out.writeUTF(Server.NEW_USER_COME_TO_SERVER+name);
+				out.writeUTF(msg);
 			} catch (IOException e) {
 				System.out.println("Имя до всех не дошло");
 				e.printStackTrace();
@@ -57,7 +66,7 @@ public class Server {
 				ServerClientListener usr=new ServerClientListener(this,newUser);
 				String name=usr.getUserName();
 				if(dataBase.containsKey(name)) continue;
-				sendNewUserNameForEveryone(name);
+				sendMessageForEveryone(Server.NEW_USER_COME_TO_SERVER+name);
 				dataBase.put(name, new DataOutputStream(newUser.getOutputStream()));
 				usr.sendClients(getAllOnlineUsers());
 			} catch (IOException e) {

@@ -3,6 +3,7 @@ package ClientSide;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -19,6 +20,7 @@ public class ClientWork extends Shell {
 	private String currentListeningСompanion;
 	private String currentWritingCompanion;
 	private String myName;
+	private boolean isOpen=true;
 	private String[] contacts;
 	
 
@@ -100,12 +102,30 @@ public class ClientWork extends Shell {
 	
 	public String readFromServer(){
 		try {
-			return fromServer.readUTF();
+			String s=null;
+			if(!mySocket.isClosed()){
+				s=fromServer.readUTF();
+			}
+			return s;
 		} catch (IOException e) {
 			System.out.println("Не пришло от сервера");
 			e.printStackTrace();
 		}
 		return null;
+	}
+	synchronized public boolean readingStreamIsOpen(){
+		return isOpen;
+	}
+	public void closeAll(){
+		try {
+			toServer.close();
+			fromServer.close();
+			mySocket.close();
+		} catch (IOException e) {
+			System.out.println("Не закрылись");
+			e.printStackTrace();
+		}
+		
 	}
 	public String getCurrentCompanion(){
 		return currentListeningСompanion;

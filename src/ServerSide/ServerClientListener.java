@@ -13,6 +13,7 @@ public class ServerClientListener extends Thread{
 	private DataOutputStream whoListenToMe;
 	private String myName;
 	private String companionName;
+	private boolean finish=false;
 	public ServerClientListener(Server serv,Socket newUser) {
 		whoAmI=newUser;
 		myServer=serv;
@@ -71,10 +72,13 @@ public class ServerClientListener extends Thread{
 		}
 	}
 	private void leaveThat(){
-		myServer.disconnectUser(myName);
-		try {
+		try {			
+			myServer.getClientOutputStream(myName).writeUTF((char)4+"");
+		    //myServer.getClientOutputStream(companionName).writeUTF(Server.NEW_USER_WRITING_TO_YOU+companionName);
 			listenToMe.close();
+			//whoListenToMe.close();
 			whoAmI.close();
+			myServer.disconnectUser(myName);
 		} catch (IOException e) {
 			System.out.println("Юзер не удалился");
 			e.printStackTrace();
@@ -84,17 +88,20 @@ public class ServerClientListener extends Thread{
 	@Override
 	public void run(){
 		try {
-			while(true){		
+			while(!finish){		
 					String message=listenToMe.readUTF();
 					if(message!=null && message.charAt(0)==Server.NEW_USER_COME_TO_SERVER) registerNewListener(message.substring(1));
-					else if(message.charAt(0)==2) leaveThat();
+					else if(message.charAt(0)==Server.USER_LEFT_SERVER){
+						leaveThat();
+						finish=true;
+						break;
+					}
 					else whoListenToMe.writeUTF(message);				
 			}
 		} catch (IOException e) {
-			System.out.println("Не смог прочитать");
 			e.printStackTrace();
 		}finally{
-			leaveThat();
+			//leaveThat();
 		}
 	}
 
