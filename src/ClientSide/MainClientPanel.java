@@ -20,45 +20,61 @@ public class MainClientPanel extends Composite {
 	private Text entry;
 	private List friends;
 	private ClientWork parent;
-	private MyThread readingThread = new MyThread();
+	private String receve;
 	private Text text_1;
+	private Runnable updateText = new Runnable() {
+		@Override
+		public void run() {
+			text.append("\n" 
+					+ parent.getCurrentWritingCompanion() + ":" + receve);
 
-	private class MyThread extends Thread {
+		}
+	};
+	private Runnable deleteFromList = new Runnable() {
 
 		@Override
 		public void run() {
-			while (true) {
-					final String receve = parent.readFromServer();
-					if (receve != null) {
-						if(receve.charAt(0)==4){
-							parent.closeAll();
-							break;
-						}
-						parent.getDisplay().syncExec(new Runnable() {
-							@Override
-							public void run() {
-								if (receve.charAt(0) == Server.NEW_USER_COME_TO_SERVER) {
-									friends.add(receve.substring(1));
-								} else if (receve.charAt(0) == Server.NEW_USER_WRITING_TO_YOU) {
-									parent.registerNewWritingCompanion(receve);
-								} else if (receve.charAt(0) == Server.USER_LEFT_SERVER) {
-									parent.registerNewListeningCompanion(parent.getMyName());
-									System.out.println("Имя для удаления:"
-											+ receve.substring(1));
-									friends.remove(receve.substring(1));
-									
-								} else {
-									text.append("\n"
-											+ parent.getCurrentWritingCompanion()
-											+ ":" + receve);
-								}
-							}
+			friends.remove(receve.substring(1));
+		}
 
-						});
+	};
+	private Runnable addToList = new Runnable() {
+
+		@Override
+		public void run() {
+			friends.add(receve.substring(1));
+
+		}
+
+	};
+	private Thread myThread = new Thread() {
+
+		@Override
+		public void run() {
+			outer: while (true) {
+				receve = parent.readFromServer();
+				if (receve != null) { // совместить с остальными
+					switch (receve.charAt(0)) {
+					case Server.NEW_USER_COME_TO_SERVER:
+						parent.getDisplay().syncExec(addToList);
+						break;
+					case Server.NEW_USER_WRITING_TO_YOU:
+						parent.registerNewWritingCompanion(receve.substring(1));
+						break;
+					case Server.USER_LEFT_SERVER:
+						if (receve.substring(1).equals(
+								parent.getCurrentCompanion()))
+							parent.registerNewListeningCompanion(parent
+									.getMyName());
+						parent.getDisplay().syncExec(deleteFromList);
+						break;
+					case 4:
+						parent.closeAll();
+						break outer;
+					default:
+						parent.getDisplay().syncExec(updateText);
 					}
-
-			//	}
-
+				}
 			}
 		}
 	};
@@ -87,26 +103,25 @@ public class MainClientPanel extends Composite {
 		friends = new List(this, SWT.BORDER | SWT.V_SCROLL);
 		friends.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
 		friends.setBounds(316, 10, 164, 327);
-		
+
 		text_1 = new Text(this, SWT.BORDER);
 		text_1.setBounds(10, 15, 158, 28);
 		text_1.setText(parent.getMyName());
-		System.out.println("Я пошел");
-		String[] data = parent.getCurrentFriends();
-		System.out.println(Arrays.toString(data));
-		if (data.length > 0) {
-			for (String s : data) {
-				friends.add(s);
-			}
-		}
-
+		
+		setFriends(parent.getCurrentFriends());
 		controlCompanion();
 		controlPressEnter();
 		addOnExitListener();
-		readingThread.start();
+		myThread.start();
 
 	}
-
+	private void setFriends(String[] data){
+		if (data.length > 0) {
+			for (String s : data) { // в функцию
+				friends.add(s);
+			}
+		}
+	}
 	private void controlCompanion() {
 		friends.addSelectionListener(new SelectionListener() {
 			@Override
@@ -135,8 +150,8 @@ public class MainClientPanel extends Composite {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				parent.sendNormalMessage((char) 2 + "");
-					//readingThread.setFinish();
-					//parent.closeAll();
+				// readingThread.setFinish();
+				// parent.closeAll();
 			}
 
 		});
