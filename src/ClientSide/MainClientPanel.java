@@ -1,13 +1,15 @@
 package ClientSide;
 
-import java.util.Arrays;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
@@ -21,7 +23,7 @@ public class MainClientPanel extends Composite {
 	private List friends;
 	private ClientWork parent;
 	private String receve;
-	private Text text_1;
+	private Label text_1;
 	private Runnable updateText = new Runnable() {
 		@Override
 		public void run() {
@@ -106,24 +108,42 @@ public class MainClientPanel extends Composite {
 		super(parent, SWT.BORDER);
 		setTouchEnabled(true);
 		this.parent = parent;
-		setLayout(null);
-
+		setLayout(new GridLayout(2,false));
+		
+		text_1 = new Label(this, SWT.BORDER);
+		GridData data = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
+		text_1.setText(parent.getMyName());
+		text_1.setLayoutData(data);
+		
+		friends = new List(this, SWT.BORDER | SWT.V_SCROLL);
+		friends.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
+		data=new GridData(GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_FILL);
+	    data.verticalSpan = 3;
+	    int listHeight = friends.getItemHeight() * 12;
+	    Rectangle trim = friends.computeTrim(0, 0, 0, listHeight);
+	    data.heightHint = trim.height;
+	    data.widthHint = 100;
+		friends.setLayoutData(data);
+		
 		text = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL
 				| SWT.MULTI);
 		text.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
-		text.setBounds(10, 49, 300, 233);
+		data = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
+	    data.verticalAlignment = GridData.FILL;
+	    data.horizontalAlignment = GridData.FILL;
+	    data.grabExcessHorizontalSpace = true;
+	    data.grabExcessVerticalSpace = true;
+		data.widthHint=300;
+		data.heightHint=400;
+		text.setLayoutData(data);
 
 		entry = new Text(this, SWT.BORDER | SWT.V_SCROLL | SWT.MULTI);
 		entry.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
-		entry.setBounds(10, 288, 300, 49);
+		data = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
+		data.heightHint=100;
+		entry.setLayoutData(data);
 
-		friends = new List(this, SWT.BORDER | SWT.V_SCROLL);
-		friends.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
-		friends.setBounds(316, 10, 164, 327);
-
-		text_1 = new Text(this, SWT.BORDER);
-		text_1.setBounds(10, 15, 158, 28);
-		text_1.setText(parent.getMyName());
+	
 		
 		setFriends(parent.getCurrentFriends());
 		controlCompanion();
