@@ -3,15 +3,16 @@ package ClientSide;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+
+import ServerSide.Server;
 
 public class ClientWork extends Shell {
 	private Socket mySocket;
@@ -20,8 +21,9 @@ public class ClientWork extends Shell {
 	private String currentListeningСompanion;
 	private String currentWritingCompanion;
 	private String myName;
-	private boolean isOpen=true;
 	private String[] contacts;
+	private HashMap<String,StringBuilder> history;
+	private HashMap<Integer,String> writers;
 	
 
 	/**
@@ -31,7 +33,9 @@ public class ClientWork extends Shell {
 	 */
 
 	public ClientWork(Display parent,String name,String host,int port) {
-		super(parent,SWT.SHELL_TRIM & (~SWT.RESIZE));
+		super(parent);
+		history=new HashMap<String,StringBuilder>();
+		writers=new HashMap<Integer,String>();
 		try {
 			mySocket=new Socket(host,port);
 			toServer=new DataOutputStream(mySocket.getOutputStream());
@@ -48,22 +52,30 @@ public class ClientWork extends Shell {
 		}
 	}
 	public void registerNewWritingCompanion(String name){
-		currentWritingCompanion=name.substring(1);
+		currentWritingCompanion=name;
 	}
 	public String getCurrentWritingCompanion(){
 		return currentWritingCompanion;
+	}
+	public void setToWriters(int num,String name){
+		System.out.println("Вставил:"+name);
+		writers.put(num, name);
+	}
+	public String getFromWriters(int num){
+		return writers.get(num);
+	}
+	public void removeFromWriters(int num){
+		writers.remove(num);
 	}
 	public void getOnlineUsers(){
 		ArrayList<String> data=new ArrayList<String>();
 		String message;
 		while(true){
-			
 			try {
 				message=fromServer.readUTF();
 				System.out.println("Message:"+message);
-				
-				if(message.charAt(message.length()-1)==5){
-					data.add(message.substring(0, message.length()-1));
+				if(message.charAt(0)==Server.ALL_USERS_SEND){ //сделать первым
+					data.add(message.substring(1));
 					break;
 				}
 				data.add(message);
@@ -75,8 +87,11 @@ public class ClientWork extends Shell {
 		}
 		contacts=new String[data.size()];
 		for(int i=0;i<data.size();++i){
+			System.out.println(data.get(i));
+			history.put(data.get(i),new StringBuilder());
 			contacts[i]=data.get(i);
 		}
+		
 	}
 	public void sendNormalMessage(String message){
 		try {
@@ -94,12 +109,16 @@ public class ClientWork extends Shell {
 	}
 	public void registerNewListeningCompanion(String name){
 		currentListeningСompanion=name;
-		StringBuilder b=new StringBuilder();
-		b.append((char)1);
-		b.append(name);
-		sendNormalMessage(b.toString());
+		sendNormalMessage(Server.WANT_WRITE_TO+name);
 	}
-	
+	public void appendInHistory(String name,String message){
+		if(!history.containsKey(name)) history.put(name, new StringBuilder().append(message));
+		else history.get(name).append(message);
+	}
+	public String getFromHistory(String username){
+		String h=history.get(username).toString();
+		return h==null?"":h;
+	}
 	public String readFromServer(){
 		try {
 			String s=null;
@@ -113,9 +132,6 @@ public class ClientWork extends Shell {
 		}
 		return null;
 	}
-	synchronized public boolean readingStreamIsOpen(){
-		return isOpen;
-	}
 	public void closeAll(){
 		try {
 			toServer.close();
@@ -127,7 +143,7 @@ public class ClientWork extends Shell {
 		}
 		
 	}
-	public String getCurrentCompanion(){
+	public String getCurrentListeningCompanion(){
 		return currentListeningСompanion;
 	}
 	public String[] getCurrentFriends(){

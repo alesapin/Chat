@@ -25,8 +25,17 @@ public class MainClientPanel extends Composite {
 	private Runnable updateText = new Runnable() {
 		@Override
 		public void run() {
-			text.append("\n" 
-					+ parent.getCurrentWritingCompanion() + ":" + receve);
+			System.out.println("Говно:"+parent.getFromWriters(receve.charAt(0)));
+			String message=receve.substring(1);
+			if(parent.getFromWriters(receve.charAt(0)).equals(parent.getCurrentListeningCompanion())){
+				text.append("\n" 
+					+ parent.getFromWriters(receve.charAt(0)) + ":" + message);
+				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)),"\n" 
+						+ parent.getFromWriters(receve.charAt(0)) + ":" + message );
+			}else{
+				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)),"\n" 
+						+ parent.getFromWriters(receve.charAt(0)) + ":" + message );
+			}
 
 		}
 	};
@@ -53,22 +62,30 @@ public class MainClientPanel extends Composite {
 		public void run() {
 			outer: while (true) {
 				receve = parent.readFromServer();
-				if (receve != null) { // совместить с остальными
+				if (receve != null) { 
 					switch (receve.charAt(0)) {
 					case Server.NEW_USER_COME_TO_SERVER:
 						parent.getDisplay().syncExec(addToList);
+						parent.appendInHistory(receve.substring(1),"");
 						break;
-					case Server.NEW_USER_WRITING_TO_YOU:
-						parent.registerNewWritingCompanion(receve.substring(1));
+					case Server.USER_WRITING_TO_YOU:
+						System.out.println("Тебе пишет:"+receve.substring(2));
+						System.out.println("Под номером:"+receve.charAt(1));
+						parent.setToWriters( receve.charAt(1),receve.substring(2));
+						parent.registerNewWritingCompanion(receve.substring(2));
 						break;
 					case Server.USER_LEFT_SERVER:
+						parent.removeFromWriters(receve.charAt(1));
 						if (receve.substring(1).equals(
-								parent.getCurrentCompanion()))
+								parent.getCurrentListeningCompanion()))
 							parent.registerNewListeningCompanion(parent
 									.getMyName());
 						parent.getDisplay().syncExec(deleteFromList);
 						break;
-					case 4:
+					case Server.USER_FINISH_WRITING:
+						parent.removeFromWriters(receve.charAt(1));
+						break;
+					case Server.YOU_CAN_CLOSE:
 						parent.closeAll();
 						break outer;
 					default:
@@ -112,6 +129,7 @@ public class MainClientPanel extends Composite {
 		controlCompanion();
 		controlPressEnter();
 		addOnExitListener();
+		parent.registerNewListeningCompanion(parent.getMyName());
 		myThread.start();
 
 	}
@@ -133,10 +151,12 @@ public class MainClientPanel extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int ind = friends.getSelectionIndex();
+				if(ind==-1) return;
 				String user = friends.getItem(ind);
-				if (user != MainClientPanel.this.parent.getCurrentCompanion()) {
+				if (!user.equals(MainClientPanel.this.parent.getCurrentListeningCompanion())) {
 					MainClientPanel.this.parent
 							.registerNewListeningCompanion(user);
+					text.setText(parent.getFromHistory(user));
 				}
 
 			}
@@ -149,7 +169,7 @@ public class MainClientPanel extends Composite {
 
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				parent.sendNormalMessage((char) 2 + "");
+				parent.sendNormalMessage(Server.USER_LEFT_SERVER + "");
 				// readingThread.setFinish();
 				// parent.closeAll();
 			}
@@ -167,7 +187,8 @@ public class MainClientPanel extends Composite {
 						text.append("\n" + parent.getMyName() + ":"
 								+ currentMessage);
 						parent.sendNormalMessage(currentMessage);
-
+						parent.appendInHistory(parent.getCurrentListeningCompanion(), "\n" + parent.getMyName() + ":"
+								+ currentMessage);
 						entry.setText("");
 					}
 				}

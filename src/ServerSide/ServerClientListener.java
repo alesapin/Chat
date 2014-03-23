@@ -10,16 +10,16 @@ public class ServerClientListener extends Thread{
 	private Socket whoAmI;
 	private Server myServer;
 	private DataInputStream listenToMe;
-	private DataOutputStream whoListenToMe;
+	private UserOutputStream whoListenToMe;
 	private String myName;
 	private String companionName;
-	private boolean finish=false;
+	private int myWritingNumber;
 	public ServerClientListener(Server serv,Socket newUser) {
 		whoAmI=newUser;
 		myServer=serv;
 		try {
 			listenToMe=new DataInputStream(whoAmI.getInputStream());
-			whoListenToMe=new DataOutputStream(whoAmI.getOutputStream());
+			whoListenToMe=new UserOutputStream(whoAmI.getOutputStream());
 			detectName();
 		} catch (IOException e) {
 			System.out.println("Стримы не открылись");
@@ -35,7 +35,7 @@ public class ServerClientListener extends Thread{
 			
 			if(names!=null && names.length>0){
 				System.out.println(Arrays.toString(names));
-				myServer.getClientOutputStream(myName).writeUTF(names[names.length-1]+Server.ALL_USERS_SEND);
+				myServer.getClientOutputStream(myName).writeUTF(Server.ALL_USERS_SEND+names[names.length-1]);
 			}
 			start();
 		} catch (IOException e) {
@@ -62,10 +62,18 @@ public class ServerClientListener extends Thread{
 		return myName;
 	}
 	private void registerNewListener(String name){
-		whoListenToMe=(DataOutputStream) myServer.getClientOutputStream(name);
+		try {
+			whoListenToMe.freeNum(myWritingNumber);
+			whoListenToMe.writeUTF(Server.USER_FINISH_WRITING+""+myWritingNumber);
+		} catch (IOException e1) {
+			System.out.println("Сказал, что не пишу");
+			e1.printStackTrace();
+		}
+		whoListenToMe=(UserOutputStream) myServer.getClientOutputStream(name);
+		myWritingNumber=whoListenToMe.getNum();
 		companionName=name;
 		try {
-			whoListenToMe.writeUTF(Server.NEW_USER_WRITING_TO_YOU+myName);
+			whoListenToMe.writeUTF(Server.USER_WRITING_TO_YOU+""+(char)myWritingNumber+myName);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -73,10 +81,8 @@ public class ServerClientListener extends Thread{
 	}
 	private void leaveThat(){
 		try {			
-			myServer.getClientOutputStream(myName).writeUTF((char)4+"");
-		    //myServer.getClientOutputStream(companionName).writeUTF(Server.NEW_USER_WRITING_TO_YOU+companionName);
+			myServer.getClientOutputStream(myName).writeUTF(Server.YOU_CAN_CLOSE+"");
 			listenToMe.close();
-			//whoListenToMe.close();
 			whoAmI.close();
 			myServer.disconnectUser(myName);
 		} catch (IOException e) {
@@ -88,15 +94,17 @@ public class ServerClientListener extends Thread{
 	@Override
 	public void run(){
 		try {
-			while(!finish){		
+			while(true){		
 					String message=listenToMe.readUTF();
-					if(message!=null && message.charAt(0)==Server.NEW_USER_COME_TO_SERVER) registerNewListener(message.substring(1));
+					if(message!=null && message.charAt(0)==Server.WANT_WRITE_TO)
+						registerNewListener(message.substring(1));
 					else if(message.charAt(0)==Server.USER_LEFT_SERVER){
 						leaveThat();
-						finish=true;
 						break;
 					}
-					else whoListenToMe.writeUTF(message);				
+					else{
+						whoListenToMe.writeUTF((char)myWritingNumber+message);				
+					}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

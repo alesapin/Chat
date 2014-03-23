@@ -8,13 +8,16 @@ import java.net.Socket;
 import java.util.HashMap;
 
 public class Server {
-	public static final char NEW_USER_COME_TO_SERVER=1;
-	public static final char USER_LEFT_SERVER=2;
-	public static final char ALL_USERS_SEND=5;
-	public static final char NEW_USER_WRITING_TO_YOU=3;
+	public static final char NEW_USER_COME_TO_SERVER=16;
+	public static final char USER_LEFT_SERVER=17;
+	public static final char ALL_USERS_SEND=18;
+	public static final char WANT_WRITE_TO=19;
+	public static final char YOU_CAN_CLOSE=20;
+	public static final char USER_WRITING_TO_YOU=21;
+	public static final char USER_FINISH_WRITING=22;
 	
 	private ServerSocket mainSock;
-	HashMap<String,DataOutputStream> dataBase;
+	HashMap<String,UserOutputStream> dataBase;
 	public Server(int port){
 		try {
 			mainSock=new ServerSocket(port);
@@ -22,11 +25,10 @@ public class Server {
 			System.out.println("Не удалось создать ServerSocket");
 			e.printStackTrace();
 		}
-		dataBase=new HashMap<String,DataOutputStream>();
+		dataBase=new HashMap<String,UserOutputStream>();
 		listen(port);
 	}
 	public DataOutputStream getClientOutputStream(String name){
-		//System.out.println("Вот что спрашивает:"+name);
 		return dataBase.get(name);
 	}
 	public void disconnectUser(String name){
@@ -67,7 +69,7 @@ public class Server {
 				String name=usr.getUserName();
 				if(dataBase.containsKey(name)) continue;
 				sendMessageForEveryone(Server.NEW_USER_COME_TO_SERVER+name);
-				dataBase.put(name, new DataOutputStream(newUser.getOutputStream()));
+				dataBase.put(name, new UserOutputStream(newUser.getOutputStream()));
 				usr.sendClients(getAllOnlineUsers());
 			} catch (IOException e) {
 				System.out.println("Сокет не получен");
