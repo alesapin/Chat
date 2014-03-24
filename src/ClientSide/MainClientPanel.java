@@ -3,6 +3,8 @@ package ClientSide;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Rectangle;
@@ -13,7 +15,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.wb.swt.SWTResourceManager;
 
 import ServerSide.Server;
 
@@ -30,13 +31,12 @@ public class MainClientPanel extends Composite {
 			System.out.println("Говно:"+parent.getFromWriters(receve.charAt(0)));
 			String message=receve.substring(1);
 			if(parent.getFromWriters(receve.charAt(0)).equals(parent.getCurrentListeningCompanion())){
-				text.append("\n" 
-					+ parent.getFromWriters(receve.charAt(0)) + ":" + message);
-				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)),"\n" 
-						+ parent.getFromWriters(receve.charAt(0)) + ":" + message );
+				text.append(parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n');
+				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)), 
+						 parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n' );
 			}else{
-				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)),"\n" 
-						+ parent.getFromWriters(receve.charAt(0)) + ":" + message );
+				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)), 
+						parent.getFromWriters(receve.charAt(0)) + ":" + message + '\n');
 			}
 
 		}
@@ -46,6 +46,7 @@ public class MainClientPanel extends Composite {
 		@Override
 		public void run() {
 			friends.remove(receve.substring(1));
+			text.setText(parent.getFromHistory(parent.getMyName()));
 		}
 
 	};
@@ -71,10 +72,8 @@ public class MainClientPanel extends Composite {
 						parent.appendInHistory(receve.substring(1),"");
 						break;
 					case Server.USER_WRITING_TO_YOU:
-						System.out.println("Тебе пишет:"+receve.substring(2));
-						System.out.println("Под номером:"+receve.charAt(1));
 						parent.setToWriters( receve.charAt(1),receve.substring(2));
-						parent.registerNewWritingCompanion(receve.substring(2));
+						//parent.registerNewWritingCompanion(receve.substring(2));
 						break;
 					case Server.USER_LEFT_SERVER:
 						parent.removeFromWriters(receve.charAt(1));
@@ -116,7 +115,6 @@ public class MainClientPanel extends Composite {
 		text_1.setLayoutData(data);
 		
 		friends = new List(this, SWT.BORDER | SWT.V_SCROLL);
-		friends.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
 		data=new GridData(GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_FILL);
 	    data.verticalSpan = 3;
 	    int listHeight = friends.getItemHeight() * 12;
@@ -126,8 +124,7 @@ public class MainClientPanel extends Composite {
 		friends.setLayoutData(data);
 		
 		text = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.V_SCROLL
-				| SWT.MULTI);
-		text.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
+				| SWT.MULTI |SWT.WRAP);
 		data = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
 	    data.verticalAlignment = GridData.FILL;
 	    data.horizontalAlignment = GridData.FILL;
@@ -137,11 +134,11 @@ public class MainClientPanel extends Composite {
 		data.heightHint=400;
 		text.setLayoutData(data);
 
-		entry = new Text(this, SWT.BORDER | SWT.V_SCROLL | SWT.MULTI);
-		entry.setFont(SWTResourceManager.getFont("Dingbats", 13, SWT.NORMAL));
+		entry = new Text(this, SWT.BORDER | SWT.V_SCROLL | SWT.MULTI | SWT.WRAP);
 		data = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
 		data.heightHint=100;
 		entry.setLayoutData(data);
+		
 
 	
 		
@@ -198,22 +195,38 @@ public class MainClientPanel extends Composite {
 	}
 
 	private void controlPressEnter() {
-		entry.addListener(SWT.Traverse, new Listener() {
+		this.addListener(SWT.Traverse, new Listener() {
 			@Override
 			public void handleEvent(org.eclipse.swt.widgets.Event event) {
 				if (event.detail == SWT.TRAVERSE_RETURN) {
 					String currentMessage = entry.getText();
-					if (currentMessage != "") {
-						text.append("\n" + parent.getMyName() + ":"
-								+ currentMessage);
+					if (!currentMessage.equals("")) {
+						text.append(parent.getMyName() + ":"
+								+ currentMessage+ '\n');
+						System.out.println("Что идет в чат: "+ currentMessage );
 						parent.sendNormalMessage(currentMessage);
-						parent.appendInHistory(parent.getCurrentListeningCompanion(), "\n" + parent.getMyName() + ":"
-								+ currentMessage);
-						entry.setText("");
+						parent.appendInHistory(parent.getCurrentListeningCompanion(), parent.getMyName() + ":"
+								+ currentMessage+ '\n');
+							
 					}
 				}
 
 			}
+		});
+		entry.addKeyListener(new KeyListener(){
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if(e.keyCode == SWT.CR || e.keyCode == SWT.KEYPAD_CR){
+					entry.setText("");
+				}
+				
+			}
+			
 		});
 	}
 }

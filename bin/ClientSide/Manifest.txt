@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Class-Path: /home/alesapin/swt.jar 
+Main-Class: ClientSide.StartClient

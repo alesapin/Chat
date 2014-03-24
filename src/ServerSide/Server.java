@@ -2,7 +2,6 @@ package ServerSide;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -15,7 +14,8 @@ public class Server {
 	public static final char YOU_CAN_CLOSE=20;
 	public static final char USER_WRITING_TO_YOU=21;
 	public static final char USER_FINISH_WRITING=22;
-	
+	public static final char BROADCAST_MESSAGE=23;
+	private boolean[] allNumbers;
 	private ServerSocket mainSock;
 	HashMap<String,UserOutputStream> dataBase;
 	public Server(int port){
@@ -26,6 +26,7 @@ public class Server {
 			e.printStackTrace();
 		}
 		dataBase=new HashMap<String,UserOutputStream>();
+		allNumbers=new boolean[127];
 		listen(port);
 	}
 	public DataOutputStream getClientOutputStream(String name){
@@ -51,6 +52,18 @@ public class Server {
 		}
 		return data;
 	}
+	private char giveNumber(){
+		for(char i=0;i<127;++i){
+			if(!allNumbers[i]){
+				allNumbers[i]=true;
+				return i;
+			}
+		}
+		return (char)128;
+	}
+	public void freeNumber(int n){
+		allNumbers[n]=false;
+	}
 	private void sendMessageForEveryone(String msg){
 		for(DataOutputStream out:dataBase.values()){
 			try {
@@ -65,7 +78,7 @@ public class Server {
 		while(true){
 			try {
 				Socket newUser=mainSock.accept();
-				ServerClientListener usr=new ServerClientListener(this,newUser);
+				ServerClientListener usr=new ServerClientListener(this,newUser,giveNumber());
 				String name=usr.getUserName();
 				if(dataBase.containsKey(name)) continue;
 				sendMessageForEveryone(Server.NEW_USER_COME_TO_SERVER+name);

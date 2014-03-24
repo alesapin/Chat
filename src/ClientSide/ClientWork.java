@@ -19,7 +19,6 @@ public class ClientWork extends Shell {
 	private DataOutputStream toServer;
 	private DataInputStream fromServer;
 	private String currentListeningСompanion;
-	private String currentWritingCompanion;
 	private String myName;
 	private String[] contacts;
 	private HashMap<String,StringBuilder> history;
@@ -50,12 +49,6 @@ public class ClientWork extends Shell {
 			System.out.println("Не создался сокет");
 			e.printStackTrace();
 		}
-	}
-	public void registerNewWritingCompanion(String name){
-		currentWritingCompanion=name;
-	}
-	public String getCurrentWritingCompanion(){
-		return currentWritingCompanion;
 	}
 	public void setToWriters(int num,String name){
 		System.out.println("Вставил:"+name);
