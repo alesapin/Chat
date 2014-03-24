@@ -1,5 +1,8 @@
 package ClientSide;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -25,19 +28,19 @@ public class MainClientPanel extends Composite {
 	private ClientWork parent;
 	private String receve;
 	private Label text_1;
+	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+	Date date = new Date();
 	private Runnable updateText = new Runnable() {
 		@Override
 		public void run() {
-			System.out.println("Говно:"+parent.getFromWriters(receve.charAt(0)));
+			date=new Date();
 			String message=receve.substring(1);
 			if(parent.getFromWriters(receve.charAt(0)).equals(parent.getCurrentListeningCompanion())){
-				text.append(parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n');
-				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)), 
-						 parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n' );
-			}else{
-				parent.appendInHistory(parent.getFromWriters(receve.charAt(0)), 
-						parent.getFromWriters(receve.charAt(0)) + ":" + message + '\n');
+				text.append("("+dateFormat.format(date)+")"+parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n');
 			}
+			parent.appendInHistory(parent.getFromWriters(receve.charAt(0)), 
+					"("+dateFormat.format(date)+")"+parent.getFromWriters(receve.charAt(0)) + ":" + message+'\n' );
+
 
 		}
 	};
@@ -168,6 +171,7 @@ public class MainClientPanel extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				int ind = friends.getSelectionIndex();
+				
 				if(ind==-1) return;
 				String user = friends.getItem(ind);
 				if (!user.equals(MainClientPanel.this.parent.getCurrentListeningCompanion())) {
@@ -187,8 +191,6 @@ public class MainClientPanel extends Composite {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				parent.sendNormalMessage(Server.USER_LEFT_SERVER + "");
-				// readingThread.setFinish();
-				// parent.closeAll();
 			}
 
 		});
@@ -201,11 +203,12 @@ public class MainClientPanel extends Composite {
 				if (event.detail == SWT.TRAVERSE_RETURN) {
 					String currentMessage = entry.getText();
 					if (!currentMessage.equals("")) {
-						text.append(parent.getMyName() + ":"
+						date=new Date();
+						text.append("("+dateFormat.format(date)+")"+parent.getMyName() + ":"
 								+ currentMessage+ '\n');
 						System.out.println("Что идет в чат: "+ currentMessage );
 						parent.sendNormalMessage(currentMessage);
-						parent.appendInHistory(parent.getCurrentListeningCompanion(), parent.getMyName() + ":"
+						parent.appendInHistory(parent.getCurrentListeningCompanion(),"("+dateFormat.format(date)+")"+ parent.getMyName() + ":"
 								+ currentMessage+ '\n');
 							
 					}

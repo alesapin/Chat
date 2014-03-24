@@ -14,11 +14,9 @@ public class ServerClientListener extends Thread{
 	private UserOutputStream whoListenToMe;
 	private String myName;
 	private int myWritingNumber;
-	private char allNumber;
-	public ServerClientListener(Server serv,Socket newUser,char num) {
+	public ServerClientListener(Server serv,Socket newUser) {
 		whoAmI=newUser;
 		myServer=serv;
-		allNumber=num;
 		try {
 			listenToMe=new DataInputStream(whoAmI.getInputStream());
 			whoListenToMe=new UserOutputStream(whoAmI.getOutputStream());
@@ -83,7 +81,6 @@ public class ServerClientListener extends Thread{
 	}
 	private void leaveThat(){
 		try {			
-			myServer.freeNumber(allNumber);
 			myServer.getClientOutputStream(myName).writeUTF(Server.YOU_CAN_CLOSE+"");
 			listenToMe.close();
 			whoAmI.close();
@@ -110,6 +107,7 @@ public class ServerClientListener extends Thread{
 							whoListenToMe.writeUTF((char)myWritingNumber+message);				
 							break;
 					}
+
 			}
 		} catch (EOFException e) {
 			myServer.disconnectUser(myName);
